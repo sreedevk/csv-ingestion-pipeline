@@ -2,8 +2,9 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   use Broadway
   alias Broadway.{Message, BatchInfo}
   alias GenreMatcher.Repo
+  alias GenreMatcher.Utils.RedisStream
 
-  # opts = %{filename: "produced.csv", stream_name: "ingestion_stream", stream_pid: #PID<1.2.3>}
+  # opts = %{filename: "data/movies_dataset.csv", stream_name: "genre_matcher"}
   def start_link(opts) do
     Broadway.start_link(
       __MODULE__,
@@ -77,9 +78,9 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   def handle_batch(_, messages, _), do: messages
 
   defp batch_insert_redis(batch) do
-    # case Redix.command(:redix, ["XADD", @stream_name, "*", "movies", entries]) do
-    #   {:ok, _id} -> messages
-    #   result -> batch_failed(messages, {:insert_all, schema, result})
-    # end
+    case RedisStream.dispatch() do
+      {:ok, _id} -> messages
+      result -> batch_failed(messages, {:insert_all, schema, result})
+    end
   end
 end
