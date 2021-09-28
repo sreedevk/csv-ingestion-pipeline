@@ -20,7 +20,7 @@ defmodule GenreMatcher.MixProject do
   def application do
     [
       mod: {GenreMatcher.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :os_mon]
     ]
   end
 
@@ -42,6 +42,7 @@ defmodule GenreMatcher.MixProject do
       {:phoenix_live_dashboard, "~> 0.5.1"},
       {:broadway, "~> 1.0"},
       {:broadway_dashboard, "~> 0.2.0"},
+      {:off_broadway_redis_stream, "~> 0.2.0"},
       {:redix, "~> 1.1"},
       {:castore, ">= 0.0.0"},
       {:telemetry_metrics, "~> 0.4"},

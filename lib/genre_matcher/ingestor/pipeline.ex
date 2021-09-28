@@ -49,14 +49,14 @@ defmodule GenreMatcher.Ingestor.Pipeline do
 
   @impl Broadway
   def handle_message(_processor, message, _context) do
-    tag_batcher_on_message(message) 
+    tag_batcher_on_message(message)
   end
 
   # private functions - PROCESSOR
   defp tag_batcher_on_message(%Message{data: %{"type" => event}} = message) do
     case batching(event) do
       :default -> message
-      {batcher, batch_key} when is_atom(batcher) -> 
+      {batcher, batch_key} when is_atom(batcher) ->
         message
         |> Message.put_batcher(batcher)
         |> Message.put_batch_key(batch_key)
@@ -77,9 +77,9 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   def handle_batch(_, messages, _), do: messages
 
   defp batch_insert_redis(batch) do
-    case Redix.command(:redix, ["XADD", @stream_name, "*", "movies", entries]) do
-      {:ok, _id} -> messages
-      result -> batch_failed(messages, {:insert_all, schema, result})
-    end
+    # case Redix.command(:redix, ["XADD", @stream_name, "*", "movies", entries]) do
+    #   {:ok, _id} -> messages
+    #   result -> batch_failed(messages, {:insert_all, schema, result})
+    # end
   end
 end
