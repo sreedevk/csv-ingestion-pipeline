@@ -1,6 +1,6 @@
 defmodule GenreMatcher.Utils.RedisStream do
-  def xadd(stream_name, key, value) do
-    Redix.command(:redix, ["XADD", stream_name, "*", key, value])
+  def xadd(stream_name, data) do
+    Redix.command(:redix, ["XADD", stream_name, "*"] ++ data)
   end
 
   def xrange(stream_name, start_index, end_index) do

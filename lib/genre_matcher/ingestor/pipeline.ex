@@ -2,7 +2,7 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   require Logger
 
   use Broadway
-  alias Broadway.{Message, BatchInfo}
+  alias Broadway.Message
   alias GenreMatcher.Utils.RedisStream
   alias GenreMatcher.Utils.ApplicationRegistry, as: AppReg
 
@@ -26,12 +26,6 @@ defmodule GenreMatcher.Ingestor.Pipeline do
         ]
       ],
       batchers: [
-        # DEFAULT BATCHER
-        default: [
-          concurrency: 1,
-          batch_size: 100_000,
-          batch_timeout: 100,
-        ],
         # BATCHER - BATCHES MOVIES BASED ON YEAR & INSERTS INTO REDIS
         stream_dispatch: [
           concurrency: 8,
@@ -43,7 +37,7 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   end
 
   def stop(reason) do
-    Broadway.stop(reason)
+    Broadway.stop(__MODULE__, reason)
   end
 
   def ack(:ack_id, _successful, _failed), do: :ok
@@ -64,7 +58,6 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   defp batching("movie.csv_record", nil),       do: { :stream_dispatch, :default }
   defp batching("movie.csv_record", batch_key), do: { :stream_dispatch, batch_key }
   defp batching(_event, _key),                  do: { :default, :default }
-  defp batching(_opts),                         do: { :default, :default }
 
   # functions - BATCHER
   @impl Broadway
@@ -74,11 +67,21 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   defp batch_insert_redis(batch) do
     stream = AppReg.lookup("redis_stream_name")
     entries = Enum.map(batch, fn entry ->
-      case RedisStream.xadd(stream, entry.data.object.id, Jason.encode!(entry.data.object)) do
-        {:ok, result} -> entry
+      case RedisStream.xadd(stream, format_data_for_redis_stream(entry.data.object)) do
+        {:ok, _result} -> entry
         {:error, errmsg} -> Message.failed(entry, errmsg.message)
       end
     end)
     entries
+  end
+
+  defp format_data_for_redis_stream(map_format_data) do
+    [
+      "id", map_format_data.id,
+      "user_id", map_format_data.user_id,
+      "name", map_format_data.name,
+      "rating", map_format_data.rating,
+      "genre", map_format_data.genre
+    ]
   end
 end

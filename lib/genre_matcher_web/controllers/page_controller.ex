@@ -7,7 +7,7 @@ defmodule GenreMatcherWeb.PageController do
 
   def start_processing_pipelines(conn, _params) do
     GenreMatcher.Maestro.start_child({GenreMatcher.Ingestor.Pipeline, %{filename: "data/movies_dataset.csv", stream_name: "genre_matcher"}})
-    # GenreMatcher.Maestro.start_child({GenreMatcher.Matcher.Pipeline, %{filename: "data/movies_dataset.csv", stream_name: "genre_matcher"}})
+    GenreMatcher.Maestro.start_child({GenreMatcher.Matcher.Pipeline, %{stream_name: "genre_matcher"}})
     redirect(conn, to: "/")
   end
 
