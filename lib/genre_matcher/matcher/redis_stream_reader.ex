@@ -1,6 +1,7 @@
 defmodule GenreMatcher.Matcher.RedisStreamReader do
   use GenStage
   alias GenreMatcher.Utils.RedisStream
+  alias GenreMatcher.Utils.ApplicationRegistry, as: AppReg
 
   def start_link(opts) do
     GenStage.start_link(__MODULE__, opts, name: __MODULE__)
@@ -8,12 +9,13 @@ defmodule GenreMatcher.Matcher.RedisStreamReader do
 
   @impl true
   def init(opts) do
-    {:producer, %{state: 0, input_stream_name: opts.input_stream_name, output_stream_name: opts.output_stream_name}}
+    AppReg.insert("output_stream_name", opts.output_stream_name)
+    {:producer, %{state: 0}}
   end
 
-  def handle_demand(demand, %{state: state, input_stream_name: input_stream_name, output_stream_name: output_stream_name}) do
-    {:ok, to_dispatch} = RedisStream.xrange(input_stream_name, state, "+", demand)
-    {:noreply, to_dispatch, %{state: fetch_stamp(List.last(to_dispatch)), input_stream_name: input_stream_name, output_stream_name: output_stream_name}}
+  def handle_demand(demand, %{state: state}) do
+    {:ok, to_dispatch} = RedisStream.xrange(AppReg.lookup("input_stream_name"), state, "+", demand)
+    {:noreply, to_dispatch, %{state: fetch_stamp(List.last(to_dispatch))}}
   end
 
   defp fetch_stamp(stream_message) do

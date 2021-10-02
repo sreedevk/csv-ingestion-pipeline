@@ -6,7 +6,6 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   alias GenreMatcher.Utils.RedisStream
   alias GenreMatcher.Utils.ApplicationRegistry, as: AppReg
 
-  # opts = %{filename: "data/movies_dataset.csv", stream_name: "genre_matcher"}
   def start_link(opts) do
     Broadway.start_link(
       __MODULE__,
@@ -65,7 +64,7 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   def handle_batch(_, messages, _), do: messages
 
   defp batch_insert_redis(batch) do
-    stream = AppReg.lookup("redis_stream_name")
+    stream = AppReg.lookup("input_stream_name")
     entries = Enum.map(batch, fn entry ->
       case RedisStream.xadd(stream, format_data_for_redis_stream(entry.data.object)) do
         {:ok, _result} -> entry

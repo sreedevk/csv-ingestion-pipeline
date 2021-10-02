@@ -2,7 +2,6 @@ defmodule GenreMatcher.Matcher.MessageGenerator do
   alias Broadway.Message
 
   def generate(event, _opts) do
-    IO.inspect(event)
     %Message{
       data: format_data(event),
       acknowledger: {GenreMatcher.Matcher.Pipeline, :ack_id, :ack_data}

@@ -1,6 +1,9 @@
 defmodule GenreMatcher.Matcher.Pipeline do
   alias Broadway.Message
   alias GenreMatcher.Matcher.Wiki
+  alias GenreMatcher.Utils.ApplicationRegistry, as: AppReg
+  alias GenreMatcher.Utils.RedisStream
+
   use Broadway
 
   @max_attempts 5
@@ -47,8 +50,7 @@ defmodule GenreMatcher.Matcher.Pipeline do
 
   @impl Broadway
   def handle_batch(:matcher_batch, batch, _batch_info, _context) do
-    Enum.map(batch, fn message ->
-    end)
+    batch_insert_redis(batch)
   end
 
   defp enhance_data(entry) do
@@ -63,5 +65,27 @@ defmodule GenreMatcher.Matcher.Pipeline do
     message
     |> Message.put_batcher(:matcher_batch)
     |> Message.put_batch_key(message.data.genre)
+  end
+
+  defp batch_insert_redis(batch) do
+    stream = AppReg.lookup("output_stream_name")
+    entries = Enum.map(batch, fn entry ->
+      case RedisStream.xadd(stream, format_data_for_redis_stream(entry.data)) do
+        {:ok, _result} -> entry
+        {:error, errmsg} -> Message.failed(entry, errmsg.message)
+      end
+    end)
+    entries
+  end
+
+  defp format_data_for_redis_stream(map_format_data) do
+    [
+      "id", map_format_data.id,
+      "user_id", map_format_data.user_id,
+      "name", map_format_data.name,
+      "rating", map_format_data.rating,
+      "genre", map_format_data.genre,
+      "genre_info", map_format_data.genre_desc
+    ]
   end
 end

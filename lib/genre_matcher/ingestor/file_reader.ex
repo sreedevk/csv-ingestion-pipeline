@@ -12,8 +12,8 @@ defmodule GenreMatcher.Ingestor.FileReader do
   end
 
   @impl true
-  def init(%{filename: filename, stream_name: redis_stream_name}) do
-    AppReg.insert("redis_stream_name", redis_stream_name)
+  def init(%{filename: filename, input_stream_name: redis_stream_name}) do
+    AppReg.insert("input_stream_name", redis_stream_name)
     {:producer, %{
         stream: File.stream!(Path.join(System.get_env("APP_ROOT"), filename)),
         state: 0
