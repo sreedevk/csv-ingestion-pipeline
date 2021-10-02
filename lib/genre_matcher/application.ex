@@ -11,6 +11,8 @@ defmodule GenreMatcher.Application do
       GenreMatcher.Repo,
       # Start the Telemetry supervisor
       GenreMatcherWeb.Telemetry,
+      # Redix Process
+      {Redix, host: "localhost", port: 6969, name: :redix},
       # Start the PubSub system
       {Phoenix.PubSub, name: GenreMatcher.PubSub},
       # Start the Endpoint (http/https)
