@@ -1,0 +1,7 @@
+services:
+  stream-redis:
+    image: redislabs/rejson:latest
+    environment:
+      - PORT=6969
+    ports:
+      - "6969:6969"
