@@ -1,5 +1,6 @@
 defmodule GenreMatcher.Matcher.Pipeline do
   alias Broadway.Message
+  alias GenreMatcher.Matcher.Wiki
   use Broadway
 
   @max_attempts 5
@@ -8,9 +9,7 @@ defmodule GenreMatcher.Matcher.Pipeline do
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [
-        module: {
-          OffBroadwayRedisStream.Producer,
-          [redis_client_opts: [host: "localhost", port: 6969], stream: opts.stream_name, consumer_name: hostname()]},
+        module: {GenreMatcher.Matcher.RedisStreamReader, opts},
         transformer: {GenreMatcher.Matcher.MessageGenerator, :generate, []}
       ],
       processors: [
@@ -35,31 +34,34 @@ defmodule GenreMatcher.Matcher.Pipeline do
   def ack(:ack_id, _successful, _failed), do: :ok
 
   @impl Broadway
-  def handle_message(_, message, _) do
-    IO.inspect(message, label: "Got message")
-    tag_batcher_on_message(message)
+  def handle_message(_processor, message, _context) do
+    message
+    |> tag_batcher_on_message()
+    |> Message.update_data(fn evt_data ->
+      Map.merge(
+        evt_data,
+        %{genre_desc: enhance_data(evt_data)}
+      )
+    end)
+  end
+
+  @impl Broadway
+  def handle_batch(:matcher_batch, batch, _batch_info, _context) do
+    Enum.map(batch, fn message ->
+    end)
+  end
+
+  defp enhance_data(entry) do
+    Wiki.search_cache(parse_genre_data(entry))
+  end
+
+  defp parse_genre_data(data) do
+    List.first(String.split(data.genre, "|"))
   end
 
   defp tag_batcher_on_message(message) do
     message
     |> Message.put_batcher(:matcher_batch)
     |> Message.put_batch_key(message.data.genre)
-  end
-
-
-  def handle_failed(messages, _) do
-    for message <- messages do
-      if message.metadata.attempt < @max_attempts do
-        Broadway.Message.configure_ack(message, retry: true)
-      else
-        [id, _] = message.data
-        IO.inspect(id, label: "Dropping")
-      end
-    end
-  end
-
-  defp hostname do
-    {:ok, host} = :inet.gethostname()
-    to_string(host)
   end
 end
