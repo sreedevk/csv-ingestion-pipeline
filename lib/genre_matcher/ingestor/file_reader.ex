@@ -2,7 +2,7 @@ defmodule GenreMatcher.Ingestor.FileReader do
   require Logger 
   use GenStage, restart: :transient, shutdown: 10_000
 
-  alias GenreMatcher.Utils.ApplicationRegistry
+  alias GenreMatcher.Utils.ApplicationRegistry, as: AppReg
 
   @behaviour Broadway.Acknowledger
 
@@ -12,8 +12,7 @@ defmodule GenreMatcher.Ingestor.FileReader do
 
   @impl true
   def init(%{filename: filename, stream_name: redis_stream_name}) do
-    ApplicationRegistry.init()
-    ApplicationRegistry.insert("redis_stream_name", redis_stream_name)
+    AppReg.insert("redis_stream_name", redis_stream_name)
     {:producer, %{stream: File.stream!(filename), state: 0}}
   end
 

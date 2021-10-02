@@ -17,6 +17,8 @@ defmodule GenreMatcherWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :index
+    get "/start-pipelines", PageController, :start_processing_pipelines
+    get "/stop-pipelines", PageController, :stop_processing_pipelines
   end
 
   # Other scopes may use custom stacks.

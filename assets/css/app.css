@@ -34,3 +34,17 @@
   display: block;
   margin: -1rem 0 2rem;
 }
+
+.btn {
+  padding: 15px;
+  border: 1px solid;
+  border-radius: 5px;
+  background: lightgreen;
+  color: black;
+  margin: 10px 0px;
+}
+
+.term-btn {
+  background: darkred;
+  color: white;
+}

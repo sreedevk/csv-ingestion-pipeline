@@ -4,4 +4,15 @@ defmodule GenreMatcherWeb.PageController do
   def index(conn, _params) do
     render(conn, "index.html")
   end
+
+  def start_processing_pipelines(conn, _params) do
+    output = GenreMatcher.Maestro.start_child({GenreMatcher.Ingestor.Pipeline, %{filename: "data/movies_dataset.csv", stream_name: "genre_matcher"}})
+    # GenreMatcher.Maestro.start_child({GenreMatcher.Matcher.Pipeline, %{filename: "data/movies_dataset.csv", stream_name: "genre_matcher"}})
+    redirect(conn, to: "/")
+  end
+
+  def stop_processing_pipelines(conn, _params) do
+    GenreMatcher.Maestro.terminate_all_children()
+    redirect(conn, to: "/")
+  end
 end
