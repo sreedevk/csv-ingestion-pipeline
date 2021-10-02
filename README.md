@@ -1,5 +1,8 @@
 # GenreMatcher
 
+![1](https://user-images.githubusercontent.com/36154121/135732231-143db59e-6bb0-4211-b916-434ae97ab875.jpg)
+
+
 Authors: Sreedev Kodichath, Joseph Giralt
 
 ## Setup
