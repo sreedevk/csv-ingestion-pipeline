@@ -68,6 +68,7 @@ defmodule GenreMatcher.Matcher.Pipeline do
   end
 
   defp batch_insert_redis(batch) do
+    update_summaries(batch)
     stream = AppReg.lookup("output_stream_name")
     entries = Enum.map(batch, fn entry ->
       case RedisStream.xadd(stream, format_data_for_redis_stream(entry.data)) do
@@ -76,6 +77,16 @@ defmodule GenreMatcher.Matcher.Pipeline do
       end
     end)
     entries
+  end
+
+  defp update_summaries(batch) do
+    batch
+    |> Enum.group_by(fn message -> message.data.genre end)
+    |> Enum.map(fn {key, value} = dildo ->
+      parsed_key = List.first(String.split(key, "|"))
+      previous_count = Redix.command!(:redix, ["HGET", "genre_matching_summary", parsed_key]) || "0"
+      Redix.command(:redix, ["HSET", "genre_matching_summary", parsed_key, Enum.count(value) + String.to_integer(previous_count)])
+    end)
   end
 
   defp format_data_for_redis_stream(map_format_data) do
