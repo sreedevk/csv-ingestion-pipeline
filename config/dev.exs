@@ -2,8 +2,8 @@ use Mix.Config
 
 # Configure your database
 config :genre_matcher, GenreMatcher.Repo,
-  username: "postgres",
-  password: "root",
+  username: System.get_env("DATABASE_USER"),
+  password: System.get_env("DATABASE_PASSWORD"),
   database: "genre_matcher_dev",
   hostname: "localhost",
   show_sensitive_data_on_connection_error: true,

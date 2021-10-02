@@ -1,6 +1,6 @@
 services:
-  stream-redis:
+  redis:
     image: redislabs/rejson:latest
+    restart: always
     ports:
-      - "6379:6969"
-    environment:
+      - "6969:6379"
