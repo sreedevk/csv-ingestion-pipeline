@@ -1,7 +1,8 @@
 defmodule GenreMatcher.Ingestor.Pipeline do
+  require Logger
+
   use Broadway
   alias Broadway.{Message, BatchInfo}
-  alias GenreMatcher.Repo
   alias GenreMatcher.Utils.RedisStream
   alias GenreMatcher.Utils.ApplicationRegistry, as: AppReg
 
@@ -11,16 +12,17 @@ defmodule GenreMatcher.Ingestor.Pipeline do
       __MODULE__,
       name: __MODULE__,
       max_restarts: 3,
-      context: :ingestion,
+      shutdown: 10_000,
       producer: [
         module: {GenreMatcher.Ingestor.FileReader, opts},
-        transformer: {GenreMatcher.Ingestor.MessageGenerator, :generate, []}
+        transformer: {GenreMatcher.Ingestor.MessageGenerator, :generate, []},
+        concurrency: 2
       ],
       processors: [
         default: [
-          min_demand: 80_000,
-          max_demand: 100_000,
-          concurrency: 2
+          min_demand: 10,
+          max_demand: 50,
+          concurrency: 5
         ]
       ],
       batchers: [
@@ -32,12 +34,16 @@ defmodule GenreMatcher.Ingestor.Pipeline do
         ],
         # BATCHER - BATCHES MOVIES BASED ON YEAR & INSERTS INTO REDIS
         dispatch_message: [
-          concurrency: 2,
-          batch_size: 100,
+          concurrency: 5,
+          batch_size: 50,
           batch_timeout: 500
         ]
       ]
     )
+  end
+
+  def stop(reason) do
+    Broadway.stop(reason)
   end
 
   def ack(:ack_id, _successful, _failed), do: :ok
@@ -48,7 +54,7 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   end
 
   # private functions - PROCESSOR
-  defp tag_batcher_on_message(%Message{data: %{"type" => event, "batch_key" => batch_key}} = message) do
+  defp tag_batcher_on_message(%Message{data: %{type: event, batch_key: batch_key}} = message) do
     {batcher, batch_key} = batching(event, batch_key)
     message
     |> Message.put_batcher(batcher)
@@ -61,14 +67,18 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   defp batching(_opts),                         do: { :default, :default }
 
   # functions - BATCHER
+  @impl Broadway
   def handle_batch(:dispatch_message, messages, _batch_info, _context), do: batch_insert_redis(messages)
   def handle_batch(_, messages, _), do: messages
 
   defp batch_insert_redis(batch) do
-    IO.inspect(batch, label: :batch)
-      # case RedisStream.batch_xadd(AppReg.lookup("redis_stream_name"), batch) do
-      #   {:ok, succ_set} -> messages
-    #   result -> batch_failed(messages, {:insert_all, schema, result})
-    # end
+    stream = AppReg.lookup("redis_stream_name")
+    entries = Enum.map(batch, fn entry ->
+      case RedisStream.xadd(stream, entry.data.object.id, Jason.encode!(entry.data.object)) do
+        {:ok, result} -> entry
+        {:error, errmsg} -> Message.failed(entry, errmsg.message)
+      end
+    end)
+    entries
   end
 end

@@ -3,12 +3,6 @@ defmodule GenreMatcher.Utils.RedisStream do
     Redix.command(:redix, ["XADD", stream_name, "*", key, value])
   end
 
-  def batch_xadd(stream_name, list) do
-    for { key, value } <- list do
-      xadd(stream_name, key, value)
-    end
-  end
-
   def xrange(stream_name, start_index, end_index) do
     Redix.command(:redix, ["XRANGE", stream_name, start_index, end_index])
   end

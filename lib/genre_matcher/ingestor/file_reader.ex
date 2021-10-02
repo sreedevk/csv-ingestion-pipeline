@@ -1,8 +1,9 @@
 defmodule GenreMatcher.Ingestor.FileReader do
   require Logger 
-  use GenStage, restart: :transient, shutdown: 10_000
+  use GenStage
 
   alias GenreMatcher.Utils.ApplicationRegistry, as: AppReg
+  alias NimbleCSV.RFC4180, as: CSV
 
   @behaviour Broadway.Acknowledger
 
@@ -13,7 +14,10 @@ defmodule GenreMatcher.Ingestor.FileReader do
   @impl true
   def init(%{filename: filename, stream_name: redis_stream_name}) do
     AppReg.insert("redis_stream_name", redis_stream_name)
-    {:producer, %{stream: File.stream!(filename), state: 0}}
+    {:producer, %{
+        stream: File.stream!(Path.join(System.get_env("APP_ROOT"), filename)),
+        state: 0
+     }}
   end
 
   @impl true
@@ -21,14 +25,11 @@ defmodule GenreMatcher.Ingestor.FileReader do
     to_dispatch =
       stream
       |> Stream.drop(state)
-      |> Stream.filter(fn record -> String.match?(record, ~r/\w+\,\w+\,\w+\,\w+\,\w+/) end)
+      |> CSV.parse_stream(skip_headers: false)
       |> Enum.take(demand)
 
     {:noreply, to_dispatch, %{stream: stream, state: state + demand}}
   end
-
-  @impl Broadway.Acknowledger
-  def ack(_, _, []), do: :ok
 
   @impl Broadway.Acknowledger
   def ack(term, _successful, failed) do
