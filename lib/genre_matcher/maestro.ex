@@ -1,16 +1,21 @@
 defmodule GenreMatcher.Maestro do
-  use Supervisor
+  use DynamicSupervisor
 
   def start_link(opts) do
-    Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
+    DynamicSupervisor.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  # spec = {GenreMatcher.Ingestor.Pipeline, opts}
+  def start_child(spec) do
+    DynamicSupervisor.start_child(__MODULE__, spec)
   end
 
   @impl true
   def init(opts) do
     children = [
-      {GenreMatcher.Ingestor.Pipeline, opts},
-      {GenreMatcher.Matcher.Pipeline, opts}
+      # ,
+      # {GenreMatcher.Matcher.Pipeline, opts}
     ]
-    Supervisor.init(children, strategy: :one_for_one)
+    DynamicSupervisor.init(strategy: :one_for_one)
   end
 end

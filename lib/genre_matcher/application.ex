@@ -4,6 +4,7 @@ defmodule GenreMatcher.Application do
   @moduledoc false
 
   use Application
+  alias GenreMatcher.Maestro
 
   def start(_type, _args) do
     children = [
@@ -13,6 +14,8 @@ defmodule GenreMatcher.Application do
       GenreMatcherWeb.Telemetry,
       # Redix Process
       {Redix, host: "localhost", port: 6969, name: :redix},
+      # Start Main Data Pipelines [Comment this out when not required]
+      {Maestro, %{filename: "data/movies_dataset.txt", stream_name: "genre_pipeline"}}
       # Start the PubSub system
       {Phoenix.PubSub, name: GenreMatcher.PubSub},
       # Start the Endpoint (http/https)

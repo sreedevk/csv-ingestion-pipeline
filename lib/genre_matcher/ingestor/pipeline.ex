@@ -3,6 +3,7 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   alias Broadway.{Message, BatchInfo}
   alias GenreMatcher.Repo
   alias GenreMatcher.Utils.RedisStream
+  alias GenreMatcher.Utils.ApplicationRegistry, as: AppReg
 
   # opts = %{filename: "data/movies_dataset.csv", stream_name: "genre_matcher"}
   def start_link(opts) do
@@ -13,17 +14,10 @@ defmodule GenreMatcher.Ingestor.Pipeline do
       context: :ingestion,
       producer: [
         module: {GenreMatcher.Ingestor.FileReader, opts},
-        transformer: {GenreMatcher.Ingestor.MessageGenerator, :generate, opts}
+        transformer: {GenreMatcher.Ingestor.MessageGenerator, :generate, []}
       ],
       processors: [
-        # FIRST PROCESSOR - CONVERTS BROADWAY MESSAGES INTO DATA STRINGS
-        data_transformer: [
-          min_demand: 80_000,
-          max_demand: 100_000,
-          concurrency: 2
-        ],
-        # SECOND PROCESSOR - CONVERTS DATA STRINGS INTO REDIX HASHMAPS
-        data_tagger: [
+        default: [
           min_demand: 80_000,
           max_demand: 100_000,
           concurrency: 2
@@ -54,33 +48,27 @@ defmodule GenreMatcher.Ingestor.Pipeline do
   end
 
   # private functions - PROCESSOR
-  defp tag_batcher_on_message(%Message{data: %{"type" => event}} = message) do
-    case batching(event) do
-      :default -> message
-      {batcher, batch_key} when is_atom(batcher) ->
-        message
-        |> Message.put_batcher(batcher)
-        |> Message.put_batch_key(batch_key)
-    end
+  defp tag_batcher_on_message(%Message{data: %{"type" => event, "batch_key" => batch_key}} = message) do
+    {batcher, batch_key} = batching(event, batch_key)
+    message
+    |> Message.put_batcher(batcher)
+    |> Message.put_batch_key(batch_key)
   end
 
-  defp batching("movie.csv_record") do
-    { :dispatch_message, :movie }
-  end
-
-  defp batching(_), do: :default
+  defp batching("movie.csv_record", nil),       do: { :dispatch_message, :default }
+  defp batching("movie.csv_record", batch_key), do: { :dispatch_message, batch_key }
+  defp batching(_event, _key),                  do: { :default, :default }
+  defp batching(_opts),                         do: { :default, :default }
 
   # functions - BATCHER
-  def handle_batch(:dispatch_message, messages, _batch_info, _context) do
-    batch_insert_redis(messages)
-  end
-
+  def handle_batch(:dispatch_message, messages, _batch_info, _context), do: batch_insert_redis(messages)
   def handle_batch(_, messages, _), do: messages
 
   defp batch_insert_redis(batch) do
-    case RedisStream.dispatch() do
-      {:ok, _id} -> messages
-      result -> batch_failed(messages, {:insert_all, schema, result})
-    end
+    IO.inspect(batch, label: :batch)
+      # case RedisStream.batch_xadd(AppReg.lookup("redis_stream_name"), batch) do
+      #   {:ok, succ_set} -> messages
+    #   result -> batch_failed(messages, {:insert_all, schema, result})
+    # end
   end
 end

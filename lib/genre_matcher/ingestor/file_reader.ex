@@ -22,6 +22,7 @@ defmodule GenreMatcher.Ingestor.FileReader do
     to_dispatch =
       stream
       |> Stream.drop(state)
+      |> Stream.filter(fn record -> String.match?(record, ~r/\w+\,\w+\,\w+\,\w+\,\w+/) end)
       |> Enum.take(demand)
 
     {:noreply, to_dispatch, %{stream: stream, state: state + demand}}

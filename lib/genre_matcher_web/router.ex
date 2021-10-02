@@ -38,7 +38,13 @@ defmodule GenreMatcherWeb.Router do
     pipe_through :browser
     live_dashboard "/dashboard", metrics: GenreMatcherWeb.Telemetry,
       additional_pages: [
-        broadway: { BroadwayDashboard, pipelines: [GenreMatcher.Parser.Pipeline] }
+        broadway: {
+          BroadwayDashboard,
+          pipelines: [
+            GenreMatcher.Ingestor.Pipeline,
+            GenreMatcher.Matcher.Pipeline
+          ]
+        }
       ]
     end
   end
