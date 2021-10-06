@@ -18,6 +18,7 @@ defmodule GenreMatcher.Matcher.RedisStreamReader do
     {:noreply, to_dispatch, %{state: fetch_stamp(List.last(to_dispatch))}}
   end
 
+  defp fetch_stamp(nil), do: 0
   defp fetch_stamp(stream_message) do
     List.first(stream_message)
   end

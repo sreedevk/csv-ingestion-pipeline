@@ -82,7 +82,7 @@ defmodule GenreMatcher.Matcher.Pipeline do
   defp update_summaries(batch) do
     batch
     |> Enum.group_by(fn message -> message.data.genre end)
-    |> Enum.map(fn {key, value} = dildo ->
+    |> Enum.map(fn {key, value} ->
       parsed_key = List.first(String.split(key, "|"))
       previous_count = Redix.command!(:redix, ["HGET", "genre_matching_summary", parsed_key]) || "0"
       Redix.command(:redix, ["HSET", "genre_matching_summary", parsed_key, Enum.count(value) + String.to_integer(previous_count)])
