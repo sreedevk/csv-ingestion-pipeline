@@ -1,5 +1,10 @@
 # GenreMatcher
 
+GenreMatcher is an example implementation of Broadway Pipelines for CSV data ingestion & matching.
+The sample CSV used here is a movie dataset that was downloaded from kaggle - https://www.kaggle.com/chaitanyahivlekar/large-movie-dataset
+
+The application uses redis streams to communicate between pipelines and processes.
+
 ![1](https://user-images.githubusercontent.com/36154121/135732231-143db59e-6bb0-4211-b916-434ae97ab875.jpg)
 
 
