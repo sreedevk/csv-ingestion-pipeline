@@ -51,3 +51,12 @@ mix ecto.create
 ``` sh
 mix ecto.migrate
 ```
+
+## Screenshot
+
+![elixir broadway](https://github.com/user-attachments/assets/021efc1c-3289-41bc-b36e-4aa632be8cfe)
+![eb1](https://github.com/user-attachments/assets/aee512cf-a8bc-4d5a-ad35-1cc2b6960171)
+![eb2](https://github.com/user-attachments/assets/44bd2b91-516a-41cf-a908-a5051254f7aa)
+
+
+
